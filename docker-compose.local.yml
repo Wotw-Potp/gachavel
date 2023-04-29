@@ -1,0 +1,49 @@
+version: "3"
+services:
+  gachavel-nginx:
+    container_name: gachavel-nginx__container
+    image: nginx:latest
+    volumes:
+      - type: bind
+        source: "./project"
+        target: "${APPLICATION_ROOT}"
+      - type: bind
+        source: "./docker/nginx/local"
+        target: "/etc/nginx/templates"
+    ports:
+      - "${WEB_PORT:-8000}:80"
+    tty: true
+    env_file: "./.env"
+    working_dir: "${APPLICATION_ROOT}"
+
+  gachavel-php:
+    container_name: "${APP_SERVICE_HOST}"
+    image: gachavel-php__image
+    build:
+      context: "./docker/php/local"
+      dockerfile: Dockerfile
+    volumes:
+      - type: bind
+        source: "./project"
+        target: "${APPLICATION_ROOT}"
+    ports:
+      - "5173:5173"
+    env_file: "./.env"
+    working_dir: "${APPLICATION_ROOT}"
+
+  gachavel-db:
+    container_name: "${DB_HOST:-gachavel-db__container}"
+    image: mysql:latest
+    platform: linux/x86_64
+    volumes:
+      - type: bind
+        source: "./docker/mysql/local/data"
+        target: "/var/lib/mysql"
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-laravel}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-password}
+      MYSQL_USER: ${DB_USERNAME:-admin}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - "3306:3306"
